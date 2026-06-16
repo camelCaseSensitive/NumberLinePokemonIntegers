@@ -258,9 +258,46 @@ function draw() {
   
   
   
-  for(let i = -10; i < 20; i++){
-    text(i, ash.width/2*(10+i), 400)
-  }
+  // for(let i = -10; i < 20; i++){
+  //   text(i, ash.width/2*(10+i), 400)
+  // }
+
+  // Draw number line from -9 to 9
+  push()
+    let lineY = 400;
+    let tickTop = lineY - 25;
+    let tickBottom = lineY + 25;
+    let labelY = lineY + 75;
+  
+    stroke(0);
+    strokeWeight(3);
+  
+    // Helper function: converts a number line value to screen x-position
+    function xFromNumber(n){
+      return ash.width/2 * (10 + n);
+    }
+  
+    // Main horizontal line
+    line(xFromNumber(minP) - 40, lineY, xFromNumber(maxP) + 40, lineY);
+  
+    // Ticks and labels
+    for(let i = minP; i <= maxP; i++){
+      if(i == 0){
+        strokeWeight(6);
+        line(xFromNumber(i), tickTop - 10, xFromNumber(i), tickBottom + 10);
+      } else {
+        strokeWeight(3);
+        line(xFromNumber(i), tickTop, xFromNumber(i), tickBottom);
+      }
+  
+      noStroke();
+      fill(0);
+      textSize(48);
+      text(i, xFromNumber(i), labelY);
+  
+      stroke(0);
+    }
+  pop()
   
   if(showImage && pokeImages[newPokeIndex]){ 
     showImage ++
