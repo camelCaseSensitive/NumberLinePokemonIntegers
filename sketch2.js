@@ -284,7 +284,7 @@ function draw() {
     for(let i = minP; i <= maxP; i++){
       if(i == 0){
         strokeWeight(6);
-        line(xFromNumber(i), tickTop - 10, xFromNumber(i), tickBottom + 10);
+        line(xFromNumber(i), tickTop - 10, xFromNumber(i), tickBottom + 3);
       } else {
         strokeWeight(3);
         line(xFromNumber(i), tickTop, xFromNumber(i), tickBottom);
