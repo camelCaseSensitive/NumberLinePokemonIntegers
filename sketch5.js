@@ -23,10 +23,14 @@ function preload() {
   pokeball = loadImage("pokeball.png")
 }
 
-// The canvas uses a 1920 x 600 coordinate system. CSS scales it to fit
-// the available window without changing the game's internal positions.
+// The game uses 1920x600 logical coordinates. The backing canvas renders
+// at lower resolution to reduce GPU load on Chromebooks, then CSS fits it.
 const CANVAS_WIDTH = 1920;
 const CANVAS_HEIGHT = 600;
+// Render at half resolution: 960x300 pixels rather than 1920x600.
+// All game positions still use the 1920x600 coordinate system.
+const RENDER_SCALE = 0.5;
+
 
 // Visible number line and walking boundaries (from version 2).
 const minP = -9;
@@ -42,13 +46,16 @@ function worldScale() {
   // Fit every tick into the canvas, but don't over-enlarge the sprites.
   const lineWidth = xFromNumber(maxP) - xFromNumber(minP);
   const requiredWidth = lineWidth + 100; // end caps + spacing
-  return Math.min(0.75, (width - 140) / requiredWidth);
+  return Math.min(0.75, (CANVAS_WIDTH - 140) / requiredWidth);
 }
 
 function setup() {
   // Avoid enormous high-DPI backing buffers on Chromebooks.
   pixelDensity(1);
-  const canvas = createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+  const canvas = createCanvas(
+    Math.round(CANVAS_WIDTH * RENDER_SCALE),
+    Math.round(CANVAS_HEIGHT * RENDER_SCALE)
+  );
   // Works both in a normal HTML page and in editors without this div.
   if (typeof document !== 'undefined' && document.getElementById('sketch-holder')) {
     canvas.parent('sketch-holder');
@@ -56,6 +63,8 @@ function setup() {
   canvas.style('display', 'block');
   canvas.style('background-color', '#ffffff');
   canvas.style('width', '100%');
+  // Even if the page's parent is unusually wide, never overflow the viewport.
+  canvas.style('max-width', 'calc(100vw - 16px)');
   canvas.style('height', 'auto');
   imageMode(CENTER)
   rectMode(CENTER)
@@ -143,7 +152,15 @@ let pressEnter = false;
 let p = 0;
 
 function draw() {
+  // Explicitly clear the previous frame before repainting the white canvas.
+  // This uses a different clear operation than background() alone.
+  clear();
   background(255);
+  scale(RENDER_SCALE);
+
+  // p5's mouse coordinates are based on the *smaller* drawing buffer.
+  const logicalMouseX = mouseX / RENDER_SCALE;
+  const logicalMouseY = mouseY / RENDER_SCALE;
   enterWait ++
   
    // image(pokeImages[0], mouseX, mouseY)
@@ -180,7 +197,7 @@ function draw() {
       pop()
     }
     
-    if(dist(mouseX, mouseY, 50 + 55*i - floor(i/pokeRow)*55*pokeRow, 50 + floor(i/pokeRow)*55) < 55/2) {
+    if(dist(logicalMouseX, logicalMouseY, 50 + 55*i - floor(i/pokeRow)*55*pokeRow, 50 + floor(i/pokeRow)*55) < 55/2) {
       hoverIndex = i;
       
     }
@@ -191,13 +208,13 @@ function draw() {
     push()
       textSize(24)
       rectMode(CENTER)
-      rect(mouseX, mouseY - 10, yourPokemon[hoverIndex].length*17, 40)
-      text(yourPokemon[hoverIndex], mouseX, mouseY)
+      rect(logicalMouseX, logicalMouseY - 10, yourPokemon[hoverIndex].length*17, 40)
+      text(yourPokemon[hoverIndex], logicalMouseX, logicalMouseY)
       noFill()
       strokeWeight(2.5)
-      rect(mouseX, mouseY+50, 50, 50)
+      rect(logicalMouseX, logicalMouseY+50, 50, 50)
       const hoveringSprite = getPokemonImage(Pokemon.indexOf(yourPokemon[hoverIndex]));
-      if (hoveringSprite) image(hoveringSprite, mouseX, mouseY+50, 50, 50)
+      if (hoveringSprite) image(hoveringSprite, logicalMouseX, logicalMouseY+50, 50, 50)
     pop()
   }
   
@@ -218,7 +235,7 @@ function draw() {
   // never both printed on top of one another.
   push()
     textAlign(CENTER)
-    text(showAns ? answer : question, width/2, 100)
+    text(showAns ? answer : question, CANVAS_WIDTH/2, 100)
   pop()
   
   
@@ -235,7 +252,7 @@ function draw() {
   // The line itself is fixed at canvas y=450. All world elements (Ash,
   // footprints, popup animations, answer locations) get the SAME transform.
   push()
-  translate(width/2, 450)
+  translate(CANVAS_WIDTH/2, 450)
   scale(worldScale())
   translate(-xFromNumber(0), -400)
 
